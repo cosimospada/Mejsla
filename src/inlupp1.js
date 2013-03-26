@@ -17,7 +17,8 @@ var options = "1 = Lägg till kontakt; " +
 var running = true;
 while (running)
 {
-    print("\n* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * ")
+    print("\n* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * ");
+
     var answer = ask("Vad vill du göra?\n" + options);
 
     switch (answer)
@@ -29,7 +30,7 @@ while (running)
             searchPerson();
             break;
         case "3":
-            listAll();
+            listAndShow();
             break;
         case "4":
             changeSortOrder();
@@ -50,9 +51,52 @@ function addPerson()
     var firstName = ask("Ange förnamn");
     var lastName = ask("Ange efternamn");
 
-    var person = new Contact(normalizeName(firstName), normalizeName(lastName));
+    var contact = new Contact(normalizeName(firstName), normalizeName(lastName));
 
-    contacts[getPersonSortableName(person)] = person;
+    addPhoneNumbers(contact);
+    addAddresses(contact);
+
+    contacts[getPersonSortableName(contact)] = contact;
+}
+
+function addPhoneNumbers(contact)
+{
+    var addingNumbers = true;
+
+    while (addingNumbers)
+    {
+        var phoneNumber = ask("Lägg till nytt telefonnummer (eller tryck Enter för att gå vidare):");
+        if (phoneNumber)
+        {
+            var phoneNumberType = ask("Ange nummertyp (eller tryck Enter för att gå vidare):");
+            contact.addPhoneNumber(new PhoneNumber(phoneNumber, phoneNumberType))
+        }
+        else
+        {
+            addingNumbers = false;
+        }
+    }
+}
+
+function addAddresses(contact)
+{
+    var addingAddresses = true;
+
+    while (addingAddresses)
+    {
+        var addressName = ask("Lägg till ny adress (eller tryck Enter för att gå vidare):");
+        if (addressName)
+        {
+            var street = ask("Ange gatuadress:");
+            var zip = ask("Ange postkod:");
+            var city = ask("Ange postort:");
+            contact.addAddress(new Address(addressName, street, zip, city))
+        }
+        else
+        {
+            addingAddresses = false;
+        }
+    }
 }
 
 function searchPerson()
@@ -73,6 +117,25 @@ function searchPerson()
 
     print("\nSökresultat:");
     listAll(candidates);
+}
+
+function listAndShow()
+{
+    print("");
+    print("Kontaktlista:");
+    listAll();
+
+    var contactIndex = ask("\nAnge siffran för den kontakt du vill visa, eller tryck Enter för att gå tillbaka till huvudmenyn.");
+
+    if (contactIndex)
+    {
+        var contactNames = Object.keys(contacts);
+        contactNames.sort();
+
+        var contact = contacts[contactNames[contactIndex - 1]];
+
+        contact.printContact();
+    }
 }
 
 function listAll(personsToList)
@@ -144,7 +207,7 @@ function editPerson()
     contacts[getPersonSortableName(contact)] = contact;
 
     print("\nKontaktinformationen är uppdaterad.");
-    listAll();
+    contact.printContact();
 }
 
 function getPersonSortableName(person)
@@ -156,37 +219,6 @@ function getPersonSortableName(person)
     else
     {
         return person.getFirstName() + " " + person.getLastName();
-    }
-}
-
-function Contact(firstName, lastName)
-{
-    var contactType;
-    var contactRole;
-
-    this.setFirstName = function(name)
-    {
-        firstName = name;
-    };
-
-    this.setLastName = function(name)
-    {
-        lastName = name;
-    };
-
-    this.getFirstName = function()
-    {
-        return firstName;
-    };
-
-    this.getLastName = function()
-    {
-        return lastName;
-    };
-
-    this.getWholeName = function()
-    {
-        return firstName + " " + lastName;
     }
 }
 
@@ -213,3 +245,116 @@ function ask(question)
     print(question);
     return readline();
 }
+
+// Objects
+
+function Contact(firstName, lastName)
+{
+    var phoneNumbers = [];
+    var addresses = [];
+
+    this.printContact = function()
+    {
+        var indentation = "    ";
+
+        print("");
+        print("KONTAKT");
+        print("Förnamn: " + firstName);
+        print("Efternamn: " + lastName);
+
+        if (phoneNumbers.length > 0)
+        {
+            print("Telefonnummer:");
+            for (var i = 0; i < phoneNumbers.length; i++)
+            {
+                var phoneNumber = phoneNumbers[i];
+                print(indentation + phoneNumber.getPhoneNumberRecord());
+            }
+        }
+
+        if (addresses.length > 0)
+        {
+            print("Adresser:");
+            for (var j = 0; j < addresses.length; j++)
+            {
+                var address = addresses[j];
+                print(indentation + address.getAddressRecord());
+            }
+        }
+
+        print("");
+    };
+
+    this.setFirstName = function(name)
+    {
+        firstName = name;
+    };
+
+    this.setLastName = function(name)
+    {
+        lastName = name;
+    };
+
+    this.getFirstName = function()
+    {
+        return firstName;
+    };
+
+    this.getLastName = function()
+    {
+        return lastName;
+    };
+
+    this.getWholeName = function()
+    {
+        return firstName + " " + lastName;
+    };
+
+    this.addPhoneNumber = function(phoneNumber)
+    {
+        phoneNumbers.push(phoneNumber);
+    };
+
+    this.addAddress = function(address)
+    {
+        addresses.push(address);
+    };
+}
+
+function PhoneNumber(number, type)
+{
+    this.getPhoneNumberRecord = function()
+    {
+        var numberType = type || "General";
+        return number + " (" + numberType + ")";
+    };
+}
+
+function Address(name, street, zip, city)
+{
+    this.getAddressRecord = function()
+    {
+        return name + ", " + street + ", " + zip + " " + city;
+    };
+
+    this.setAddressName = function(newName)
+    {
+        name = newName;
+    };
+
+    this.setAddressStreet = function(newStreet)
+    {
+        street = newStreet;
+    };
+
+    this.setAddressZip = function(newZip)
+    {
+        zip = newZip;
+    };
+
+    this.setAddressCity = function(newCity)
+    {
+        city = newCity;
+    };
+}
+
